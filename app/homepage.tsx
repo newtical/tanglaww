@@ -2,16 +2,16 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-ico
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Dimensions,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import HamburgerMenu from './hamburger';
 
@@ -25,7 +25,6 @@ export default function Homepage() {
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* --- 2. The Sidebar Modal --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -33,19 +32,15 @@ export default function Homepage() {
         onRequestClose={() => setIsMenuVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          {/* This is your hamburger.tsx component */}
           <HamburgerMenu onClose={() => setIsMenuVisible(false)} />
           
-          {/* Tapping this area (the right side) closes the menu */}
           <TouchableWithoutFeedback onPress={() => setIsMenuVisible(false)}>
             <View style={styles.clickableOverlay} />
           </TouchableWithoutFeedback>
         </View>
       </Modal>
 
-      {/* --- Custom Blue Header --- */}
       <View style={styles.header}>
-        {/* --- 3. Open menu on press --- */}
         <TouchableOpacity 
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           onPress={() => setIsMenuVisible(true)} 
@@ -70,7 +65,6 @@ export default function Homepage() {
       >
         <Text style={styles.welcomeText}>Welcome Back!</Text>
 
-        {/* --- Image Carousel Placeholder --- */}
         <View style={styles.carouselContainer}>
           <View style={styles.imagePlaceholder}>
             <Ionicons name="image-outline" size={50} color="#BDC3C7" />
@@ -83,7 +77,6 @@ export default function Homepage() {
           </View>
         </View>
 
-        {/* --- Continue Section --- */}
         <Text style={styles.sectionTitle}>Continue where you left off...</Text>
         <TouchableOpacity 
           style={styles.continueCard} 
@@ -97,7 +90,6 @@ export default function Homepage() {
           <Ionicons name="arrow-forward" size={24} color="#2F459B" />
         </TouchableOpacity>
 
-        {/* --- Announcements Section --- */}
         <View style={styles.infoCard}>
           <View style={styles.cardHeader}>
             <MaterialCommunityIcons name="bullhorn-outline" size={22} color="#2F459B" />
@@ -109,7 +101,6 @@ export default function Homepage() {
           </Text>
         </View>
 
-        {/* --- Daily Affirmation Section --- */}
         <View style={styles.infoCard}>
           <View style={styles.cardHeader}>
             <Ionicons name="heart-outline" size={22} color="#2F459B" />
@@ -121,7 +112,6 @@ export default function Homepage() {
         </View>
       </ScrollView>
 
-      {/* --- Bottom Navigation Bar --- */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/homepage')}>
           <Ionicons name="home" size={24} color="#FFB800" />

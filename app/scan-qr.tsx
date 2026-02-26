@@ -8,7 +8,6 @@ export default function ScanQRScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={26} color="#2F459B" />
       </TouchableOpacity>
@@ -17,21 +16,17 @@ export default function ScanQRScreen() {
         <Text style={styles.headerTitle}>Scan QR</Text>
         <Text style={styles.headerSubtitle}>Point your camera at the QR code to proceed</Text>
 
-        {/* QR Scanner Frame (Mockup) */}
         <View style={styles.scannerOutline}>
           <View style={styles.qrBox}>
-            {/* The Blue Corners from your UI */}
             <View style={[styles.corner, styles.topLeft]} />
             <View style={[styles.corner, styles.topRight]} />
             <View style={[styles.corner, styles.bottomLeft]} />
             <View style={[styles.corner, styles.bottomRight]} />
             
-            {/* Placeholder QR Icon */}
             <Ionicons name="qr-code" size={150} color="#111" />
           </View>
         </View>
 
-        {/* Instructions Section */}
         <View style={styles.stepsContainer}>
           <Text style={styles.stepsTitle}>Steps:</Text>
           

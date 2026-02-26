@@ -8,14 +8,14 @@ export default function RootLayout() {
         animation: 'fade', 
       }}
     >
-      {/* Starting Screen */}
+
       <Stack.Screen name="index" />
       
-      {/* Onboarding & Main Portal */}
+
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
       
-      {/* Action Pages */}
+
       <Stack.Screen name="signin" />
       <Stack.Screen name="enroll" />
     </Stack>

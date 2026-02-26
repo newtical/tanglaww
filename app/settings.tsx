@@ -2,13 +2,13 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function SettingsScreen() {
@@ -18,7 +18,6 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
@@ -28,7 +27,6 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Account Settings */}
         <Text style={styles.sectionLabel}>Account Settings</Text>
         <View style={styles.sectionGroup}>
           <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/newpass')}>
@@ -48,11 +46,11 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Notification Settings */}
+
         <Text style={styles.sectionLabel}>Notification Settings</Text>
         <View style={styles.sectionGroup}>
           
-          {/* Email Notifications Aligned */}
+
           <View style={styles.settingItemRow}>
             <View style={styles.itemLeft}>
               <Ionicons name="mail-outline" size={22} color="#0D2A94" />
@@ -69,7 +67,7 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Push Notifications Aligned */}
+
           <View style={styles.settingItemRow}>
             <View style={styles.itemLeft}>
               <Ionicons name="notifications-outline" size={22} color="#0D2A94" />
@@ -87,7 +85,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Preferences */}
+
         <Text style={styles.sectionLabel}>Preferences</Text>
         <View style={styles.sectionGroup}>
           <TouchableOpacity style={styles.settingItem}>
@@ -99,7 +97,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Bottom Spacer */}
+
         <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>

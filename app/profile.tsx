@@ -20,14 +20,12 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* --- Hamburger Modal --- */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={isMenuVisible}
         onRequestClose={() => setIsMenuVisible(false)}
       >
-        {/* CHANGED THIS FROM <div> TO <View> */}
         <View style={styles.modalOverlay}>
           <HamburgerMenu onClose={() => setIsMenuVisible(false)} />
           
@@ -37,7 +35,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* --- Header --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsMenuVisible(true)}>
           <Ionicons name="menu" size={28} color="white" />
@@ -94,7 +91,6 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* --- Universal Bottom Navigation --- */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/homepage')}>
           <Ionicons name="home-outline" size={24} color="#2F459B" />

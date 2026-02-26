@@ -8,7 +8,6 @@ export default function HelpScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Consistent Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
@@ -18,7 +17,6 @@ export default function HelpScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* FAQs Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="help-circle-outline" size={26} color="#0D2A94" />
@@ -32,7 +30,6 @@ export default function HelpScreen() {
           </Text>
         </View>
 
-        {/* Contact Us Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="call-outline" size={24} color="#0D2A94" />

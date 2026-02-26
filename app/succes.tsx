@@ -15,7 +15,6 @@ export default function SuccessScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Large Green Checkmark Circle */}
         <View style={styles.iconContainer}>
           <Ionicons name="checkmark-sharp" size={100} color="white" />
         </View>

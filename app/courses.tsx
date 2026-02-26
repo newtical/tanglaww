@@ -2,14 +2,14 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-ico
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import HamburgerMenu from './hamburger';
 
@@ -17,7 +17,6 @@ export default function CoursesScreen() {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   
-  // --- 1. State for Sidebar Visibility ---
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const COURSES = [
@@ -34,7 +33,6 @@ export default function CoursesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* --- 2. Hamburger Menu Modal --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -49,10 +47,8 @@ export default function CoursesScreen() {
         </View>
       </Modal>
 
-      {/* --- Header --- */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          {/* --- 3. Trigger Menu Open --- */}
           <TouchableOpacity onPress={() => setIsMenuVisible(true)}>
             <Ionicons name="menu" size={28} color="white" />
           </TouchableOpacity>
@@ -95,7 +91,6 @@ export default function CoursesScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* Dropdown Content */}
             {expandedId === course.id && (
               <View style={styles.dropdownContent}>
                 <TouchableOpacity style={styles.dropdownItem}>
@@ -112,7 +107,6 @@ export default function CoursesScreen() {
         ))}
       </ScrollView>
 
-      {/* --- Bottom Navigation Bar --- */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/homepage')}>
           <Ionicons name="home-outline" size={24} color="#2F459B" />

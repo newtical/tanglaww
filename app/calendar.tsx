@@ -2,16 +2,16 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 
-    View
+  View
 } from 'react-native';
 import HamburgerMenu from './hamburger';
 
@@ -31,7 +31,7 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* --- 2. Hamburger Modal --- */}
+      {/*burgerch */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -46,9 +46,7 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* --- Header --- */}
       <View style={styles.header}>
-        {/* --- 3. Open Menu Trigger --- */}
         <TouchableOpacity onPress={() => setIsMenuVisible(true)}>
           <Ionicons name="menu" size={28} color="white" />
         </TouchableOpacity>
@@ -107,12 +105,10 @@ export default function CalendarScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-todo')}>
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Bottom Nav */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => router.replace('/homepage')}>
           <Ionicons name="home-outline" size={24} color="#2F459B" />

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-// Strictly 3/4 of the screen width
 const DRAWER_WIDTH = width * 0.75; 
 
 interface HamburgerProps {
@@ -21,7 +20,6 @@ interface HamburgerProps {
 export default function HamburgerMenu({ onClose }: HamburgerProps) {
   const router = useRouter();
 
-  // Closes the modal first, then pushes the new route after a tiny delay
   const handleNav = (path: string) => {
     if (onClose) {
       onClose();
@@ -33,7 +31,6 @@ export default function HamburgerMenu({ onClose }: HamburgerProps) {
 
   return (
     <SafeAreaView style={styles.drawerContainer}>
-      {/* --- Header Section --- */}
       <View style={styles.drawerHeader}>
         <View style={styles.avatarCircle}>
           <Ionicons name="person-outline" size={40} color="#0D2A94" />
@@ -44,53 +41,44 @@ export default function HamburgerMenu({ onClose }: HamburgerProps) {
           <Text style={styles.userEmail}>johndoejacat10@gmail.com</Text>
         </View>
         
-        {/* Background Graphic */}
         <View style={styles.headerGraphic}>
              <Ionicons name="at-circle" size={150} color="rgba(255,255,255,0.15)" />
         </View>
       </View>
 
-      {/* --- Main Menu Links --- */}
       <View style={styles.menuItems}>
-        {/* Profile Navigation */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/profile')}>
           <Ionicons name="person-outline" size={22} color="#2F459B" />
           <Text style={styles.menuText}>My Profile</Text>
           <Ionicons name="chevron-forward" size={18} color="#BDC3C7" />
         </TouchableOpacity>
 
-        {/* Settings Navigation - Now Active */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/settings')}>
           <Ionicons name="settings-outline" size={22} color="#2F459B" />
           <Text style={styles.menuText}>Settings</Text>
           <Ionicons name="chevron-forward" size={18} color="#BDC3C7" />
         </TouchableOpacity>
 
-        {/* About Navigation */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/about')}>
           <Ionicons name="information-circle-outline" size={22} color="#2F459B" />
           <Text style={styles.menuText}>About</Text>
           <Ionicons name="chevron-forward" size={18} color="#BDC3C7" />
         </TouchableOpacity>
 
-        {/* Pushes utilities to the bottom */}
         <View style={{ flex: 1 }} />
         
         <View style={styles.separator} />
 
-        {/* Help Navigation */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/help')}>
           <Ionicons name="help-circle-outline" size={22} color="#2F459B" />
           <Text style={styles.menuText}>Help</Text>
         </TouchableOpacity>
 
-        {/* Policies Navigation */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/policies')}>
           <MaterialCommunityIcons name="scale-balance" size={22} color="#2F459B" />
           <Text style={styles.menuText}>Policies</Text>
         </TouchableOpacity>
 
-        {/* Sign Out Navigation */}
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNav('/')}>
           <Ionicons name="log-out-outline" size={22} color="#FF4D4D" />
           <Text style={[styles.menuText, { color: '#FF4D4D' }]}>Sign Out</Text>

@@ -7,7 +7,6 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Yellow top section */}
       <View style={styles.topSection}>
         <Image 
           source={require('../assets/images/business-idea (1).png')} 
@@ -16,7 +15,6 @@ export default function LoginScreen() {
         />
       </View>
 
-      {/* White card section */}
       <View style={styles.bottomSection}>
         <View style={{ height: 50 }} />
         <SafeAreaView style={styles.innerContainer}>
@@ -26,7 +24,6 @@ export default function LoginScreen() {
           <View style={{ height: 5 }} />
 
           <View style={styles.buttonContainer}>
-            {/* Navigates to Sign In */}
             <View style={styles.buttonWrapper}>
               <TouchableOpacity 
                 style={styles.signInBtn}
@@ -37,7 +34,6 @@ export default function LoginScreen() {
               <Text style={styles.subLabel}>For Existing users</Text>
             </View>
 
-            {/* Navigates to Enrollment */}
             <View style={styles.buttonWrapper}>
               <TouchableOpacity 
                 style={styles.enrollBtn}
@@ -49,7 +45,6 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Navigation to Activate Account (code.tsx) */}
           <TouchableOpacity onPress={() => router.push('/code')}>
             <Text style={styles.enrollCodeLink}>Use Enrollment Code</Text>
           </TouchableOpacity>

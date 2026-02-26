@@ -126,7 +126,6 @@ export default function EnrollmentScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         
-        {/* STEP 1: DATA PRIVACY */}
         {step === 1 && (
           <View>
             {renderProgressHeader("Data Privacy Notice")}
@@ -146,7 +145,6 @@ export default function EnrollmentScreen() {
           </View>
         )}
 
-        {/* STEP 2: PROGRAM & CURRICULUM */}
         {step === 2 && (
           <View>
             {renderProgressHeader("Program & Curriculum")}
@@ -191,7 +189,6 @@ export default function EnrollmentScreen() {
           </View>
         )}
 
-        {/* STEP 3: PERSONAL INFO */}
         {step === 3 && (
           <View>
             {renderProgressHeader("Personal Information")}
@@ -214,7 +211,6 @@ export default function EnrollmentScreen() {
           </View>
         )}
 
-        {/* STEP 4: PROMOTIONS & PAYMENT */}
         {step === 4 && (
           <View>
             {renderProgressHeader("Promotions & Payment")}
@@ -265,7 +261,6 @@ export default function EnrollmentScreen() {
           </View>
         )}
 
-        {/* STEP 5: SUMMARY */}
         {step === 5 && (
           <View>
             {renderProgressHeader("Summary")}

@@ -17,7 +17,6 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={24} color="#2F459B" />
       </TouchableOpacity>
@@ -55,7 +54,6 @@ export default function SignInScreen() {
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* Updated Sign In Button */}
           <TouchableOpacity 
             style={styles.signInBtn}
             onPress={handleSignIn}
