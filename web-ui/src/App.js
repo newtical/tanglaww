@@ -14,6 +14,7 @@ import AdminPolicies from "./pages/admin/AdminPolicies";
 import AdminRecordedSessions from "./pages/admin/AdminRecordedSessions";
 import AdminSignIn from "./pages/admin/AdminSignIn";
 import AdminStudentRegistry from "./pages/admin/AdminStudentRegistry";
+import Analytics from "./pages/Analytics"; // <-- 1. ADD THIS IMPORT
 import Calendar from "./pages/Calendar";
 import ChangePassword from "./pages/ChangePassword";
 import CourseDetail from "./pages/CourseDetails";
@@ -31,7 +32,6 @@ import Settings from "./pages/Settings";
 import SignIn from "./pages/SignIn";
 import Terms from "./pages/Terms";
 
-
 export default function App() {
   return (
     <Routes>
@@ -39,6 +39,7 @@ export default function App() {
       <Route path="/enroll" element={<Enroll />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard/Analytics" element={<Analytics />} /> {/* <-- 2. ADD THIS ROUTE */}
       <Route path="/dashboard/courses" element={<Courses />} />
       <Route path="/dashboard/courses/:courseId" element={<CourseDetail isAdmin={false} />} />
       <Route path="/dashboard/calendar" element={<Calendar />} />
@@ -55,19 +56,18 @@ export default function App() {
       <Route path="/admin/approvals" element={<AdminApprovals />} />
       <Route path="/admin/audit-queue" element={<AdminAuditQueue />} />
       <Route path="/admin/students" element={<AdminStudentRegistry />} />
-<Route path="/admin/about" element={<AdminAbout />} />
+      <Route path="/admin/about" element={<AdminAbout />} />
       <Route path="/admin/calendar" element={<AdminCalendar />} />
       <Route path="/admin/courses" element={<AdminCourses />} />
-<Route path="/admin/help" element={<AdminHelp />} />
-<Route path="/admin/policies" element={<AdminPolicies />} />
-<Route path="/admin/audit-log" element={<AdminAuditLog />} />
+      <Route path="/admin/help" element={<AdminHelp />} />
+      <Route path="/admin/policies" element={<AdminPolicies />} />
+      <Route path="/admin/audit-log" element={<AdminAuditLog />} />
       <Route path="/admin/courses/:courseId/handouts" element={<AdminHandouts />} />
       <Route path="/our-courses" element={<OurCourses />} />
-<Route path="/about-us" element={<AboutUs />} />
-<Route path="/helpdesk" element={<HelpdeskPage />} />
-<Route path="/download" element={<DownloadApp />} />
+      <Route path="/about-us" element={<AboutUs />} />
+      <Route path="/helpdesk" element={<HelpdeskPage />} />
+      <Route path="/download" element={<DownloadApp />} />
       <Route path="/admin/courses/:courseId/recorded-sessions" element={<AdminRecordedSessions />} />
-      
     </Routes>
   );
 }
