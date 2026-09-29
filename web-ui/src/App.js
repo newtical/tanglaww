@@ -30,14 +30,19 @@ import OurCourses from "./pages/OurCourses";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import SignIn from "./pages/SignIn";
+import SignInWithCode from "./pages/SignInWithCode";
 import Terms from "./pages/Terms";
+import { applyUserTheme, getUserThemePreference } from "./lib/userTheme";
 
 export default function App() {
+  applyUserTheme(getUserThemePreference());
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/enroll" element={<Enroll />} />
       <Route path="/signin" element={<SignIn />} />
+      <Route path="/signin/code" element={<SignInWithCode />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/dashboard/Analytics" element={<Analytics />} /> {/* <-- 2. ADD THIS ROUTE */}
       <Route path="/dashboard/courses" element={<Courses />} />

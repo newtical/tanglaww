@@ -8,6 +8,7 @@ import {
   Download,
   FileText,
   Image,
+  Play,
   Quote,
   Sparkles,
   TrendingUp,
@@ -18,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import dashboardBanner from "../assets/dashboardBanner.png";
 import Sidebar from "../components/Sidebar";
 import UserTopbar from "../components/UserTopbar";
+import { getStudentCourseProgress } from "../lib/materialProgress";
 import { supabase } from "../lib/supabase";
 import "./Dashboard.css";
 
@@ -27,53 +29,6 @@ const affirmations = [
   "I trust my process, stay consistent, and focus on my growth every day.",
   "Challenges are just opportunities to sharpen my knowledge and build confidence.",
   "I am resilient, prepared, and deserving of success in my upcoming board examination."
-];
-
-const coursesData = [
-  {
-    id: "c1",
-    name: "LET On Boarding (Concept-Driven)",
-    instructor: "Mr. Rue Alun",
-    progress: 100,
-    color: "#4caf50",
-    handouts: [
-      { id: "h1", title: "LET Foundations & Orientation Guide.pdf", size: "2.4 MB" },
-      { id: "h2", title: "Concept-Driven Review Blueprint 2026.pdf", size: "3.1 MB" },
-    ],
-  },
-  {
-    id: "c2",
-    name: "LET Express",
-    instructor: "Mr. Rue Alun",
-    progress: 70,
-    color: "#ffb800",
-    handouts: [
-      { id: "h3", title: "General Education Express Notes.pdf", size: "4.5 MB" },
-      { id: "h4", title: "Professional Education High-Yield Drill.pdf", size: "1.8 MB" },
-      { id: "h5", title: "Quick Formula & Laws Cheat Sheet.pdf", size: "850 KB" },
-    ],
-  },
-  {
-    id: "c3",
-    name: "LET Advance",
-    instructor: "Mr. Rue Alun",
-    progress: 100,
-    color: "#4caf50",
-    handouts: [
-      { id: "h6", title: "Advanced Pedagogy & Assessment Module.pdf", size: "5.2 MB" },
-      { id: "h7", title: "Curriculum Development Deep Dive.pdf", size: "3.7 MB" },
-    ],
-  },
-  {
-    id: "c4",
-    name: "Integrative",
-    instructor: "Mr. Rue Alun",
-    progress: 70,
-    color: "#ffb800",
-    handouts: [
-      { id: "h8", title: "Integrative Mock Board Examination Q&A.pdf", size: "6.0 MB" },
-    ],
-  },
 ];
 
 const deadlines = [
@@ -113,6 +68,17 @@ function ProgressRing({ percent }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [progressSummary, setProgressSummary] = useState({
+    totalCount: 0,
+    completedCount: 0,
+    overallProgress: 0,
+    totalHandouts: 0,
+    completedHandouts: 0,
+  });
+  const [progressLoading, setProgressLoading] = useState(true);
+  const [progressError, setProgressError] = useState("");
+  const [studentId, setStudentId] = useState(null);
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [affirmation, setAffirmation] = useState("");
 
@@ -127,10 +93,72 @@ export default function Dashboard() {
     };
     fetchAnnouncements();
 
+    const fetchProgress = async () => {
+      setProgressLoading(true);
+      setProgressError("");
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sign in to view your course progress.");
+
+        const { data: student, error: studentError } = await supabase
+          .from("student")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+
+        if (studentError) throw new Error(studentError.message);
+        if (!student) throw new Error("No student profile is linked to this account.");
+
+        const id = Number(student.id);
+        setStudentId(id);
+        const result = await getStudentCourseProgress(id);
+        setCourses(result.courses);
+        setProgressSummary(result.summary);
+      } catch (error) {
+        setProgressError(error.message ?? "Unable to load course progress.");
+      } finally {
+        setProgressLoading(false);
+      }
+    };
+    fetchProgress();
+
     // Select a daily affirmation randomly
     const randomIndex = Math.floor(Math.random() * affirmations.length);
     setAffirmation(affirmations[randomIndex]);
   }, []);
+
+  useEffect(() => {
+    if (!studentId) return undefined;
+
+    const refreshProgress = async () => {
+      try {
+        const result = await getStudentCourseProgress(studentId);
+        setCourses(result.courses);
+        setProgressSummary(result.summary);
+        setProgressError("");
+      } catch (error) {
+        setProgressError(error.message ?? "Unable to refresh course progress.");
+      }
+    };
+
+    const channel = supabase
+      .channel(`student-progress-${studentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "student_material_progress",
+          filter: `student_id=eq.${studentId}`,
+        },
+        refreshProgress,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [studentId]);
 
   const toggleCourseExpand = (courseId, e) => {
     e.stopPropagation(); // Prevents navigating to the course page when clicking the chevron
@@ -148,7 +176,7 @@ export default function Dashboard() {
           style={{ cursor: "pointer" }}
         >
           <div className="course-progress-badge">
-            <div className="progress-dot" style={{ backgroundColor: c.color }} />
+            <div className="progress-dot" style={{ backgroundColor: c.progress === 100 ? "#4caf50" : c.progress > 0 ? "#ffb800" : "#aab2c0" }} />
             {c.progress}%
           </div>
           <Image size={28} color="#90a4ae" />
@@ -181,20 +209,26 @@ export default function Dashboard() {
             <div className="handouts-section" onClick={(e) => e.stopPropagation()}>
               <div className="handouts-title">
                 <BookOpen size={13} color="#0D2A94" />
-                <span>Course Handouts & Resources</span>
+                <span>Course Materials</span>
               </div>
               <div className="handouts-list">
-                {c.handouts.map((h) => (
-                  <div key={h.id} className="handout-item">
+                {c.materials.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "12px", color: "#888" }}>No course materials yet.</p>
+                ) : c.materials.map((material) => (
+                  <div key={material.material_id} className="handout-item">
                     <div className="handout-left">
-                      <FileText size={15} color="#0D2A94" />
+                      {material.materialType === "recorded_session"
+                        ? <Play size={15} color="#0D2A94" />
+                        : <FileText size={15} color="#0D2A94" />}
                       <div>
-                        <div className="handout-name">{h.title}</div>
-                        <div className="handout-size">{h.size}</div>
+                        <div className="handout-name">{material.title}</div>
+                        <div className="handout-size">{material.isCompleted ? "Completed" : material.materialType === "recorded_session" ? "Recorded session" : "Handout"}</div>
                       </div>
                     </div>
-                    <a href={`#download-${h.id}`} className="handout-download-btn" title="Download Handout">
-                      <Download size={14} color="#0D2A94" />
+                    <a href={material.fileUrl} target="_blank" rel="noreferrer" className="handout-download-btn" title={material.materialType === "recorded_session" ? "Open recorded session" : "Open handout"}>
+                      {material.materialType === "recorded_session"
+                        ? <Play size={14} color="#0D2A94" />
+                        : <Download size={14} color="#0D2A94" />}
                     </a>
                   </div>
                 ))}
@@ -206,8 +240,9 @@ export default function Dashboard() {
     );
   };
 
-  const inProgressCourses = coursesData.filter((c) => c.progress < 100);
-  const completedCourses = coursesData.filter((c) => c.progress === 100);
+  const notStartedCourses = courses.filter((course) => course.progress === 0);
+  const inProgressCourses = courses.filter((course) => course.progress > 0 && course.progress < 100);
+  const completedCourses = courses.filter((course) => course.totalCount > 0 && course.progress === 100);
 
   return (
     <div className="dashboard-layout">
@@ -260,29 +295,41 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* In Progress Courses Section */}
-            <div className="card">
-              <div className="card-title">In Progress Courses</div>
-              <div className="courses-grid">
-                {inProgressCourses.length > 0 ? (
-                  inProgressCourses.map(renderCourseCard)
-                ) : (
-                  <p style={{ fontSize: "13px", color: "#888" }}>No active courses in progress.</p>
-                )}
-              </div>
-            </div>
+            {progressError && (
+              <p role="alert" style={{ color: "#c0392b", fontSize: "13px" }}>{progressError}</p>
+            )}
+            {progressLoading ? (
+              <div className="card"><p style={{ fontSize: "13px", color: "#888" }}>Loading course progress...</p></div>
+            ) : (
+              <>
+                <div className="card">
+                  <div className="card-title">Not Started Courses</div>
+                  <div className="courses-grid">
+                    {notStartedCourses.length > 0
+                      ? notStartedCourses.map(renderCourseCard)
+                      : <p style={{ fontSize: "13px", color: "#888" }}>All courses have started.</p>}
+                  </div>
+                </div>
 
-            {/* Completed Courses Section */}
-            <div className="card">
-              <div className="card-title">Completed Courses</div>
-              <div className="courses-grid">
-                {completedCourses.length > 0 ? (
-                  completedCourses.map(renderCourseCard)
-                ) : (
-                  <p style={{ fontSize: "13px", color: "#888" }}>No completed courses yet.</p>
-                )}
-              </div>
-            </div>
+                <div className="card">
+                  <div className="card-title">In Progress Courses</div>
+                  <div className="courses-grid">
+                    {inProgressCourses.length > 0
+                      ? inProgressCourses.map(renderCourseCard)
+                      : <p style={{ fontSize: "13px", color: "#888" }}>No courses currently in progress.</p>}
+                  </div>
+                </div>
+
+                <div className="card">
+                  <div className="card-title">Completed Courses</div>
+                  <div className="courses-grid">
+                    {completedCourses.length > 0
+                      ? completedCourses.map(renderCourseCard)
+                      : <p style={{ fontSize: "13px", color: "#888" }}>No completed courses yet.</p>}
+                  </div>
+                </div>
+              </>
+            )}
 
           </div>
 
@@ -322,42 +369,32 @@ export default function Dashboard() {
               </div>
 
               <div className="progress-ring-wrap">
-                <ProgressRing percent={54} />
+                <ProgressRing percent={progressSummary.overallProgress} />
                 <div className="readiness-tag">
                   <CheckCircle2 size={12} color="#2e7d32" />
-                  <span>On Track for LET</span>
+                  <span>{progressSummary.completedCount} of {progressSummary.totalCount} materials complete</span>
                 </div>
               </div>
 
-              {/* Analytics Breakdown Bars */}
+              {/* Progress Breakdown */}
               <div className="analytics-metrics">
                 <div className="metric-row">
                   <div className="metric-info">
-                    <span>Handouts Studied</span>
-                    <strong>18/24</strong>
+                    <span>Handouts Completed</span>
+                    <strong>{progressSummary.completedHandouts}/{progressSummary.totalHandouts}</strong>
                   </div>
                   <div className="metric-bar-bg">
-                    <div className="metric-bar-fill" style={{ width: "75%", backgroundColor: "#0D2A94" }} />
+                    <div className="metric-bar-fill" style={{ width: `${progressSummary.totalHandouts ? Math.round((progressSummary.completedHandouts / progressSummary.totalHandouts) * 100) : 0}%`, backgroundColor: "#0D2A94" }} />
                   </div>
                 </div>
 
                 <div className="metric-row">
                   <div className="metric-info">
-                    <span>Mock Exam Score</span>
-                    <strong>82%</strong>
+                    <span>All Materials Completed</span>
+                    <strong>{progressSummary.completedCount}/{progressSummary.totalCount}</strong>
                   </div>
                   <div className="metric-bar-bg">
-                    <div className="metric-bar-fill" style={{ width: "82%", backgroundColor: "#FFB800" }} />
-                  </div>
-                </div>
-
-                <div className="metric-row">
-                  <div className="metric-info">
-                    <span>Video Attendance</span>
-                    <strong>60%</strong>
-                  </div>
-                  <div className="metric-bar-bg">
-                    <div className="metric-bar-fill" style={{ width: "60%", backgroundColor: "#2e7d32" }} />
+                    <div className="metric-bar-fill" style={{ width: `${progressSummary.overallProgress}%`, backgroundColor: "#2e7d32" }} />
                   </div>
                 </div>
               </div>

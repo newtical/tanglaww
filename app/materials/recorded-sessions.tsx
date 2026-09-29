@@ -25,6 +25,10 @@ import {
   getMaterialsByModule,
   LearningMaterial,
 } from "../../services/materialService";
+import {
+  getCompletedMaterialIds,
+  setMaterialCompleted,
+} from "../../services/materialProgressService";
 
 const { width } = Dimensions.get("window");
 
@@ -250,13 +254,28 @@ export default function RecordedSessionsScreen() {
   const [activeSession, setActiveSession] = useState<LearningMaterial | null>(
     null,
   );
+  const [completedMaterialIds, setCompletedMaterialIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [savingProgressId, setSavingProgressId] = useState<number | null>(null);
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
     const data = await getMaterialsByModule(moduleId, "recorded_session");
     setSessions(data);
+    if (!isAdmin && currentStudentId) {
+      try {
+        const completedIds = await getCompletedMaterialIds(
+          currentStudentId,
+          data.map((session) => session.material_id),
+        );
+        setCompletedMaterialIds(completedIds);
+      } catch (error: any) {
+        Alert.alert("Progress unavailable", error.message);
+      }
+    }
     setLoading(false);
-  }, [moduleId]);
+  }, [moduleId, currentStudentId, isAdmin]);
 
   useEffect(() => {
     if (moduleId) fetchSessions();
@@ -277,6 +296,25 @@ export default function RecordedSessionsScreen() {
     ]);
   };
 
+  const handleToggleCompletion = async (item: LearningMaterial) => {
+    if (!currentStudentId) return;
+    const isCompleted = completedMaterialIds.has(item.material_id);
+    setSavingProgressId(item.material_id);
+    try {
+      await setMaterialCompleted(currentStudentId, item.material_id, !isCompleted);
+      setCompletedMaterialIds((current) => {
+        const next = new Set(current);
+        if (isCompleted) next.delete(item.material_id);
+        else next.add(item.material_id);
+        return next;
+      });
+    } catch (error: any) {
+      Alert.alert("Unable to update progress", error.message);
+    } finally {
+      setSavingProgressId(null);
+    }
+  };
+
   const handleSessionViewed = async (session: LearningMaterial) => {
     if (!isAdmin && currentStudentId) {
       await logAudit({
@@ -291,8 +329,10 @@ export default function RecordedSessionsScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: LearningMaterial }) => (
-    <View style={styles.sessionCard}>
+  const renderItem = ({ item }: { item: LearningMaterial }) => {
+    const isCompleted = completedMaterialIds.has(item.material_id);
+    return (
+      <View style={styles.sessionCard}>
       <TouchableOpacity
         style={styles.thumbnailWrap}
         onPress={() => setActiveSession(item)}
@@ -329,6 +369,29 @@ export default function RecordedSessionsScreen() {
             <Text style={styles.actionBtnText}>YouTube</Text>
           </TouchableOpacity>
 
+          {!isAdmin && currentStudentId && (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => handleToggleCompletion(item)}
+              disabled={savingProgressId === item.material_id}
+            >
+              {savingProgressId === item.material_id ? (
+                <ActivityIndicator size="small" color="#2F459B" />
+              ) : (
+                <>
+                  <Ionicons
+                    name={isCompleted ? "checkmark-circle" : "ellipse-outline"}
+                    size={15}
+                    color={isCompleted ? "#27834a" : "#2F459B"}
+                  />
+                  <Text style={[styles.actionBtnText, isCompleted && { color: "#27834a" }]}>
+                    {isCompleted ? "Completed" : "Mark complete"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
           {isAdmin && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.deleteBtn]}
@@ -343,7 +406,8 @@ export default function RecordedSessionsScreen() {
         </View>
       </View>
     </View>
-  );
+    );
+    };
 
   return (
     <SafeAreaView style={styles.container}>

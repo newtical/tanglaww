@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiLock, FiMail, FiBell, FiSun, FiChevronRight, FiChevronDown } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { applyUserTheme, getUserThemePreference } from "../lib/userTheme";
 import "./Dashboard.css";
 
 export default function Settings() {
@@ -9,6 +10,12 @@ export default function Settings() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(true);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(getUserThemePreference);
+
+  const selectTheme = (theme) => {
+    setSelectedTheme(theme);
+    applyUserTheme(theme);
+  };
 
   return (
     <div className="dashboard-layout">
@@ -121,12 +128,12 @@ export default function Settings() {
               {themeOpen && (
                 <div style={{ padding: "0 20px 16px 56px", display: "flex", gap: "12px" }}>
                   {["Light", "Dark", "System"].map((t) => (
-                    <button key={t} style={{
+                    <button key={t} type="button" aria-pressed={selectedTheme === t.toLowerCase()} onClick={() => selectTheme(t.toLowerCase())} style={{
                       padding: "6px 18px",
                       borderRadius: "20px",
                       border: "1px solid #1a1a6e",
-                      backgroundColor: t === "Light" ? "#1a1a6e" : "#fff",
-                      color: t === "Light" ? "#fff" : "#1a1a6e",
+                      backgroundColor: selectedTheme === t.toLowerCase() ? "#1a1a6e" : "#fff",
+                      color: selectedTheme === t.toLowerCase() ? "#fff" : "#1a1a6e",
                       fontSize: "13px",
                       fontFamily: "Poppins, sans-serif",
                       cursor: "pointer",
@@ -148,6 +155,7 @@ export default function Settings() {
 function Toggle({ value, onChange }) {
   return (
     <div
+      className="settings-toggle"
       onClick={() => onChange(!value)}
       style={{
         width: "44px",

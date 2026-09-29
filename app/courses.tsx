@@ -21,6 +21,7 @@ import {
 import { useAdmin } from "../context/AdminContext";
 import { supabase } from "../lib/supabase";
 import { getModulesByCourse } from "../services/materialService";
+import { getCompletedMaterialIds } from "../services/materialProgressService";
 import HamburgerMenu from "./hamburger";
 
 interface Module {
@@ -34,6 +35,7 @@ interface Course {
   instructor: string | null;
   isActive: boolean;
   modules: Module[];
+  progress: number;
 }
 
 const courseImages: Record<number, any> = {
@@ -89,7 +91,49 @@ export default function CoursesScreen() {
       }),
     );
 
-    setCourses(coursesWithModules);
+    const moduleIds = coursesWithModules.flatMap((course) =>
+      course.modules.map((module) => module.module_id),
+    );
+    let materials: { material_id: number; module_id: number }[] = [];
+    if (moduleIds.length > 0) {
+      const { data: materialRows, error: materialError } = await supabase
+        .from("learning_material")
+        .select("material_id, module_id")
+        .in("module_id", moduleIds);
+
+      if (materialError) {
+        console.error("fetchCourseMaterials:", materialError.message);
+      } else {
+        materials = materialRows ?? [];
+      }
+    }
+
+    let completedMaterialIds = new Set<number>();
+    try {
+      completedMaterialIds = await getCompletedMaterialIds(
+        currentStudentId,
+        materials.map((material) => material.material_id),
+      );
+    } catch (progressError) {
+      console.error("fetchMaterialProgress:", progressError);
+    }
+
+    setCourses(coursesWithModules.map((course) => {
+      const courseModuleIds = new Set(course.modules.map((module) => module.module_id));
+      const courseMaterials = materials.filter((material) =>
+        courseModuleIds.has(material.module_id),
+      );
+      const completedCount = courseMaterials.filter((material) =>
+        completedMaterialIds.has(material.material_id),
+      ).length;
+
+      return {
+        ...course,
+        progress: courseMaterials.length
+          ? Math.round((completedCount / courseMaterials.length) * 100)
+          : 0,
+      };
+    }));
     setLoading(false);
   };
 
@@ -126,14 +170,6 @@ export default function CoursesScreen() {
         },
       });
     }
-  };
-
-  // Dynamically reads real values based on accessible database states rather than locked values
-  const getProgress = (courseId: number) => {
-    if (courseId === 1) return 92;
-    if (courseId === 2) return 58;
-    if (courseId === 3) return 25;
-    return 0;
   };
 
   return (
@@ -189,7 +225,7 @@ export default function CoursesScreen() {
             const isLocked =
               !course.isActive && !accessibleCourseIds.has(course.course_id);
             const isExpanded = expandedId === course.course_id;
-            const progress = getProgress(course.course_id);
+            const progress = course.progress;
 
             return (
               <View key={course.course_id} style={styles.cardContainer}>

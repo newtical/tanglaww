@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -159,6 +159,14 @@ export default function SignIn() {
 
         <button style={{ width: "100%", padding: "12px", backgroundColor: "#fff", color: "#1a1a6e", border: "2px solid #1a1a6e", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
           <span>▦</span> Sign in with QR code
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/signin/code")}
+          style={{ width: "100%", padding: "12px", marginTop: "10px", backgroundColor: "#fff", color: "#1a1a6e", border: "1px solid #d7d9e3", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+        >
+          <KeyRound size={16} /> Sign in with code
         </button>
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "28px", fontSize: "12px" }}>

@@ -5,7 +5,6 @@ import {
   Clock,
   FileText,
   Image,
-  Lock,
   Search,
   TrendingUp,
   Video
@@ -18,16 +17,25 @@ import letExpress from "../assets/images/let-express.jpg";
 import letOnBoarding from "../assets/images/let-on-boarding.jpg";
 import NotificationBell from "../components/NotificationBell";
 import Sidebar from "../components/Sidebar";
+import { getStudentCourseProgress } from "../lib/materialProgress";
 import { supabase } from "../lib/supabase";
 import "./Dashboard.css";
 
-const courses = [
+const courseImages = {
+  1: letOnBoarding,
+  2: letExpress,
+  3: letAdvanced,
+  4: integrative,
+};
+
+const fallbackCourses = [
   {
     id: 1,
     name: "LET On Boarding (Concept-Driven)",
     instructor: "Mr. Ruel Atun",
-    progress: 100,
-    color: "#4caf50",
+    progress: 0,
+    color: "#aab2c0",
+    totalCount: 0,
     contents: [
       { id: "m101", title: "Orientation & Blueprint Overview", type: "video" },
       { id: "m102", title: "General Education Diagnostic Drill", type: "handout" },
@@ -37,8 +45,9 @@ const courses = [
     id: 2,
     name: "LET Express",
     instructor: "Mr. Ruel Atun",
-    progress: 70,
-    color: "#4caf50",
+    progress: 0,
+    color: "#aab2c0",
+    totalCount: 0,
     contents: [
       { id: "m201", title: "High-Yield Professional Education Drill", type: "video" },
       { id: "m202", title: "LET Express Formula & Key Terms.pdf", type: "handout" },
@@ -49,8 +58,9 @@ const courses = [
     id: 3,
     name: "LET Advance",
     instructor: "Mr. Ruel Atun",
-    progress: 100,
-    color: "#4caf50",
+    progress: 0,
+    color: "#aab2c0",
+    totalCount: 0,
     contents: [
       { id: "m301", title: "Advanced Pedagogy & Assessment Module", type: "handout" },
       { id: "m302", title: "Curriculum Development Deep Dive", type: "video" },
@@ -60,20 +70,36 @@ const courses = [
     id: 4,
     name: "Integrative",
     instructor: "Mr. Ruel Atun",
-    progress: 70,
-    color: "#4caf50",
+    progress: 0,
+    color: "#aab2c0",
+    totalCount: 0,
     contents: [
       { id: "m401", title: "Integrative Mock Board Examination Q&A", type: "handout" },
     ],
   },
 ];
 
-const courseImages = {
-  1: letOnBoarding,
-  2: letExpress,
-  3: letAdvanced,
-  4: integrative,
-};
+function mapCourseData(courseData) {
+  const coursesById = new Map(courseData.map((course) => [course.id, course]));
+
+  return fallbackCourses.map((course) => {
+    const liveCourse = coursesById.get(course.id);
+    const progress = liveCourse?.progress ?? 0;
+    const liveContents = liveCourse?.materials.map((material) => ({
+      id: material.material_id,
+      title: material.title,
+      type: material.materialType === "recorded_session" ? "video" : "handout",
+    }));
+
+    return {
+      ...course,
+      progress,
+      totalCount: liveCourse?.totalCount ?? 0,
+      color: progress === 100 ? "#4caf50" : progress > 0 ? "#f5a623" : "#aab2c0",
+      contents: liveContents?.length ? liveContents : course.contents,
+    };
+  });
+}
 
 const deadlines = [
   { title: "LET Express - Online Session", date: "Oct 23, 2025", time: "10:00AM", link: "zoom.us/join" },
@@ -105,64 +131,56 @@ function LeaderboardChart() {
 
 export default function Courses() {
   const navigate = useNavigate();
-  const [accessibleCourses, setAccessibleCourses] = useState(new Set());
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [expandedCourseId, setExpandedCourseId] = useState(null);
 
   useEffect(() => {
-    fetchUserCourseAccess();
+    const loadCourses = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setCourses(fallbackCourses);
+          return;
+        }
+
+        const { data: student, error: studentError } = await supabase
+          .from("student")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+
+        if (studentError) throw new Error(studentError.message);
+        if (!student) throw new Error("No student profile is linked to this account.");
+
+        const result = await getStudentCourseProgress(Number(student.id));
+        setCourses(mapCourseData(result.courses));
+      } catch (error) {
+        setLoadError(error.message ?? "Unable to load courses.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourses();
   }, []);
-
-  const fetchUserCourseAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: student } = await supabase
-        .from("student")
-        .select("id")
-        .eq("email", user.email)
-        .maybeSingle();
-
-      if (!student) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: accessRows } = await supabase
-        .from("course_access")
-        .select("course_id")
-        .eq("student_id", student.id);
-
-      setAccessibleCourses(new Set((accessRows ?? []).map((r) => r.course_id)));
-    } catch (err) {
-      console.error("Error fetching course access:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleAccordion = (courseId, e) => {
     e.stopPropagation();
     setExpandedCourseId((prev) => (prev === courseId ? null : courseId));
   };
 
-  const handleCourseClick = (courseId, isLocked) => {
-    if (!isLocked) {
-      navigate(`/dashboard/courses/${courseId}`);
-    }
+  const handleCourseClick = (courseId) => {
+    navigate(`/dashboard/courses/${courseId}`);
   };
 
-  const handleContentClick = (e, courseId, contentId) => {
+  const handleContentClick = (e, courseId) => {
     e.stopPropagation();
-    navigate(`/dashboard/courses/${courseId}/materials/${contentId}`);
+    navigate(`/dashboard/courses/${courseId}`);
   };
 
   const renderCourseCard = (c) => {
-    const isLocked = !accessibleCourses.has(c.id);
     const isExpanded = expandedCourseId === c.id;
 
     return (
@@ -178,7 +196,7 @@ export default function Courses() {
       >
         {/* Thumbnail Header - Navigates to Course View */}
         <div
-          onClick={() => handleCourseClick(c.id, isLocked)}
+          onClick={() => handleCourseClick(c.id)}
           style={{
             backgroundColor: "#e8eaf6",
             height: "120px",
@@ -188,7 +206,7 @@ export default function Courses() {
             position: "relative",
             overflow: "hidden",
             color: "#bbb",
-            cursor: isLocked ? "default" : "pointer",
+            cursor: "pointer",
           }}
         >
           <div style={{
@@ -211,23 +229,11 @@ export default function Courses() {
           </div>
 
           {courseImages[c.id] ? (
-            <img src={courseImages[c.id]} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isLocked ? 0.4 : 1 }} />
+            <img src={courseImages[c.id]} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <Image size={28} color="#bbb" />
           )}
 
-          {isLocked && (
-            <div style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "rgba(0,0,0,0.15)",
-            }}>
-              <Lock size={48} color="white" strokeWidth={1.5} />
-            </div>
-          )}
         </div>
 
         {/* Title Bar & Chevron Trigger */}
@@ -241,44 +247,37 @@ export default function Courses() {
           }}
         >
           <div
-            onClick={() => handleCourseClick(c.id, isLocked)}
-            style={{ cursor: isLocked ? "default" : "pointer", flexGrow: 1 }}
+            onClick={() => handleCourseClick(c.id)}
+            style={{ cursor: "pointer", flexGrow: 1 }}
           >
             <div style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a2e" }}>{c.name}</div>
             <div style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>{c.instructor}</div>
-            {isLocked && (
-              <div style={{ fontSize: "12px", color: "#e53935", marginTop: "4px", fontWeight: "500" }}>
-                This course is currently locked
-              </div>
-            )}
           </div>
 
-          {!isLocked && (
-            <button
-              type="button"
-              onClick={(e) => toggleAccordion(c.id, e)}
-              aria-label="Toggle contents"
-              style={{
-                background: "#f0f3ff",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                marginLeft: "12px",
-                flexShrink: 0
-              }}
-            >
-              {isExpanded ? <ChevronUp size={18} color="#0D2A94" /> : <ChevronDown size={18} color="#777" />}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={(e) => toggleAccordion(c.id, e)}
+            aria-label="Toggle contents"
+            style={{
+              background: "#f0f3ff",
+              border: "none",
+              borderRadius: "50%",
+              width: "32px",
+              height: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              marginLeft: "12px",
+              flexShrink: 0
+            }}
+          >
+            {isExpanded ? <ChevronUp size={18} color="#0D2A94" /> : <ChevronDown size={18} color="#777" />}
+          </button>
         </div>
 
         {/* Expandable Inner Content List */}
-        {isExpanded && !isLocked && (
+        {isExpanded && (
           <div style={{
             padding: "0 16px 16px",
             borderTop: "1px dashed #e0e0e0",
@@ -302,7 +301,7 @@ export default function Courses() {
                 c.contents.map((item) => (
                   <div
                     key={item.id}
-                    onClick={(e) => handleContentClick(e, c.id, item.id)}
+                    onClick={(e) => handleContentClick(e, c.id)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -344,8 +343,8 @@ export default function Courses() {
     );
   };
 
-  const inProgressCourses = courses.filter((c) => c.progress < 100);
-  const completedCourses = courses.filter((c) => c.progress === 100);
+  const inProgressCourses = courses.filter((course) => course.progress < 100);
+  const completedCourses = courses.filter((course) => course.totalCount > 0 && course.progress === 100);
 
   return (
     <div className="dashboard-layout">
@@ -368,11 +367,13 @@ export default function Courses() {
 
           {/* LEFT - Segregated Course Lists */}
           <div className="dashboard-left">
-            {/* In Progress Section */}
+            {loadError && <p role="alert" style={{ color: "#c0392b", fontSize: "13px" }}>{loadError}</p>}
             <div className="card" style={{ marginBottom: "16px" }}>
               <div className="card-title">In Progress Courses</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {inProgressCourses.length > 0 ? (
+                {loading ? (
+                  <div style={{ fontSize: "13px", color: "#888" }}>Loading courses...</div>
+                ) : inProgressCourses.length > 0 ? (
                   inProgressCourses.map(renderCourseCard)
                 ) : (
                   <div style={{ fontSize: "13px", color: "#888" }}>No active courses in progress.</div>
@@ -380,11 +381,12 @@ export default function Courses() {
               </div>
             </div>
 
-            {/* Completed Section */}
             <div className="card">
               <div className="card-title">Completed Courses</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {completedCourses.length > 0 ? (
+                {loading ? (
+                  <div style={{ fontSize: "13px", color: "#888" }}>Loading courses...</div>
+                ) : completedCourses.length > 0 ? (
                   completedCourses.map(renderCourseCard)
                 ) : (
                   <div style={{ fontSize: "13px", color: "#888" }}>No completed courses yet.</div>

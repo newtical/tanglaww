@@ -1,53 +1,52 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import UserTopbar from "../components/UserTopbar";
+import { getStudentCourseProgress } from "../lib/materialProgress";
+import { supabase } from "../lib/supabase";
 import "./Dashboard.css";
-
-const courseAnalyticsData = [
-  {
-    id: 1,
-    name: "LET On Boarding (Concept-Driven)",
-    progress: 100,
-    score: 95,
-    modulesCompleted: 8,
-    totalModules: 8,
-    timeSpent: "14h 20m",
-    status: "Completed"
-  },
-  {
-    id: 2,
-    name: "LET Express",
-    progress: 70,
-    score: 82,
-    modulesCompleted: 7,
-    totalModules: 10,
-    timeSpent: "18h 45m",
-    status: "In Progress"
-  },
-  {
-    id: 3,
-    name: "LET Advance",
-    progress: 100,
-    score: 91,
-    modulesCompleted: 12,
-    totalModules: 12,
-    timeSpent: "22h 10m",
-    status: "Completed"
-  },
-  {
-    id: 4,
-    name: "Integrative",
-    progress: 40,
-    score: 78,
-    modulesCompleted: 2,
-    totalModules: 5,
-    timeSpent: "6h 15m",
-    status: "In Progress"
-  }
-];
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [courses, setCourses] = useState([]);
+  const [summary, setSummary] = useState({
+    totalCount: 0,
+    completedCount: 0,
+    overallProgress: 0,
+    totalHandouts: 0,
+    completedHandouts: 0,
+    courseCount: 0,
+    completedCourseCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sign in to view your progress.");
+
+        const { data: student, error: studentError } = await supabase
+          .from("student")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+
+        if (studentError) throw new Error(studentError.message);
+        if (!student) throw new Error("No student profile is linked to this account.");
+
+        const result = await getStudentCourseProgress(Number(student.id));
+        setCourses(result.courses);
+        setSummary(result.summary);
+      } catch (loadError) {
+        setError(loadError.message ?? "Unable to load progress.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProgress();
+  }, []);
 
   return (
     <div className="dashboard-layout">
@@ -105,7 +104,7 @@ export default function Analytics() {
               </div>
               <div>
                 <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Overall Completion</div>
-                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>77.5%</div>
+                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>{summary.overallProgress}%</div>
               </div>
             </div>
 
@@ -118,8 +117,8 @@ export default function Analytics() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Average Diagnostic Score</div>
-                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>86.5%</div>
+                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Handouts Completed</div>
+                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>{summary.completedHandouts}/{summary.totalHandouts}</div>
               </div>
             </div>
 
@@ -131,8 +130,8 @@ export default function Analytics() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Total Study Time</div>
-                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>61.5 Hours</div>
+                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Courses Completed</div>
+                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>{summary.completedCourseCount}/{summary.courseCount}</div>
               </div>
             </div>
 
@@ -144,8 +143,8 @@ export default function Analytics() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Mock Board Readiness</div>
-                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>High</div>
+                <div style={{ fontSize: "12px", color: "#777", fontWeight: "500" }}>Materials Completed</div>
+                <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>{summary.completedCount}/{summary.totalCount}</div>
               </div>
             </div>
 
@@ -166,8 +165,14 @@ export default function Analytics() {
                 </div>
               </div>
 
+              {error && <p role="alert" style={{ color: "#c0392b", fontSize: "13px" }}>{error}</p>}
+              {loading ? (
+                <p style={{ fontSize: "13px", color: "#888" }}>Loading course progress...</p>
+              ) : courses.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "#888" }}>No courses available.</p>
+              ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                {courseAnalyticsData.map((course) => (
+                {courses.map((course) => (
                   <div key={course.id} style={{ borderBottom: "1px solid #f0f0f0", paddingBottom: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                       <span style={{ fontSize: "14px", fontWeight: "600", color: "#333" }}>{course.name}</span>
@@ -187,13 +192,12 @@ export default function Analytics() {
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#777" }}>
-                      <span>Modules: <strong>{course.modulesCompleted}/{course.totalModules}</strong></span>
-                      <span>Avg. Drill Score: <strong>{course.score}%</strong></span>
-                      <span>Time Spent: <strong>{course.timeSpent}</strong></span>
+                      <span>Materials completed: <strong>{course.completedCount}/{course.totalCount}</strong></span>
                     </div>
                   </div>
                 ))}
               </div>
+              )}
             </div>
 
             {/* Sidebar Insights */}
@@ -209,10 +213,10 @@ export default function Analytics() {
                 </div>
                 <div style={{ fontSize: "13px", color: "#555", lineHeight: "1.5" }}>
                   <p style={{ marginTop: 0 }}>
-                    🎯 <strong>Strong Performance:</strong> You scored 95% in General Education drills.
+                    🎯 <strong>Course completion:</strong> {summary.completedCount} of {summary.totalCount} materials completed.
                   </p>
                   <p style={{ marginBottom: 0 }}>
-                    💡 <strong>Focus Area:</strong> Revisit <em>Integrative Mock Board Q&A</em> to improve completion status.
+                    💡 <strong>Courses complete:</strong> {summary.completedCourseCount} of {summary.courseCount}.
                   </p>
                 </div>
               </div>
@@ -227,11 +231,11 @@ export default function Analytics() {
                   <span style={{ fontSize: "15px", fontWeight: "700", color: "#1a1a2e" }}>Study Goal</span>
                 </div>
                 <div style={{ fontSize: "13px", color: "#555" }}>
-                  Weekly Goal: <strong>15 Hours</strong>
+                  Material completion
                   <div style={{ height: "8px", width: "100%", backgroundColor: "#eef2ff", borderRadius: "4px", margin: "8px 0" }}>
-                    <div style={{ height: "100%", width: "80%", backgroundColor: "#f5a623", borderRadius: "4px" }} />
+                    <div style={{ height: "100%", width: `${summary.overallProgress}%`, backgroundColor: "#f5a623", borderRadius: "4px" }} />
                   </div>
-                  <span style={{ fontSize: "11px", color: "#888" }}>12 hrs completed this week (80%)</span>
+                  <span style={{ fontSize: "11px", color: "#888" }}>{summary.overallProgress}% complete</span>
                 </div>
               </div>
 

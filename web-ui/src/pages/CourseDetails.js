@@ -1,10 +1,11 @@
-import { ChevronLeft, Play, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Circle, Play, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import NotificationBell from "../components/NotificationBell";
 import Sidebar from "../components/Sidebar";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import { supabase } from "../lib/supabase";
+import { getCompletedMaterialIds, setMaterialCompleted } from "../lib/materialProgress";
 import "./Dashboard.css";
 
 function YouTubeEmbed({ youtubeId }) {
@@ -41,11 +42,22 @@ export default function CourseDetail({ isAdmin = false }) {
   const [uploading, setUploading] = useState(false);
   const [adminId, setAdminId] = useState(null);
   const [playingId, setPlayingId] = useState(null);
+  const [studentId, setStudentId] = useState(null);
+  const [completedMaterialIds, setCompletedMaterialIds] = useState(new Set());
+  const [savingProgressId, setSavingProgressId] = useState(null);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setAdminId(user.id);
+      if (user && !isAdmin) {
+        const { data: student } = await supabase
+          .from("student")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+        if (student) setStudentId(Number(student.id));
+      }
 
       const { data: courseData } = await supabase
         .from("course")
@@ -66,22 +78,59 @@ export default function CourseDetail({ isAdmin = false }) {
       setLoading(false);
     };
     init();
-  }, [courseId]);
+  }, [courseId, isAdmin]);
 
   useEffect(() => {
     if (!selectedModule) return;
     fetchMaterials();
-  }, [selectedModule, activeTab]);
+  }, [selectedModule, activeTab, studentId, isAdmin]);
 
   const fetchMaterials = async () => {
     if (!selectedModule) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("learning_material")
       .select("*")
       .eq("module_id", selectedModule.module_id)
       .eq("materialType", activeTab === "handouts" ? "handout" : "recorded_session")
       .order("uploadedAt", { ascending: false });
-    setMaterials(data ?? []);
+    if (error) {
+      console.error("Error fetching course materials:", error.message);
+      setMaterials([]);
+      return;
+    }
+    const materialRows = data ?? [];
+    setMaterials(materialRows);
+    if (!isAdmin && studentId) {
+      try {
+        const completedIds = await getCompletedMaterialIds(
+          studentId,
+          materialRows.map((material) => Number(material.material_id)),
+        );
+        setCompletedMaterialIds(completedIds);
+      } catch (progressError) {
+        console.error("Error fetching material progress:", progressError.message);
+      }
+    }
+  };
+
+  const toggleMaterialCompletion = async (material) => {
+    if (!studentId) return;
+    const materialId = Number(material.material_id);
+    const completed = !completedMaterialIds.has(materialId);
+    setSavingProgressId(materialId);
+    try {
+      await setMaterialCompleted(studentId, materialId, completed);
+      setCompletedMaterialIds((current) => {
+        const next = new Set(current);
+        if (completed) next.add(materialId);
+        else next.delete(materialId);
+        return next;
+      });
+    } catch (error) {
+      alert(`Unable to update progress: ${error.message}`);
+    } finally {
+      setSavingProgressId(null);
+    }
   };
 
   const handleUploadHandout = async (e) => {
@@ -309,6 +358,25 @@ export default function CourseDetail({ isAdmin = false }) {
                           </div>
 
                           <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                            {!isAdmin && studentId && (
+                              <button
+                                type="button"
+                                onClick={() => toggleMaterialCompletion(m)}
+                                disabled={savingProgressId === Number(m.material_id)}
+                                aria-pressed={completedMaterialIds.has(Number(m.material_id))}
+                                title={completedMaterialIds.has(Number(m.material_id)) ? "Mark as not complete" : "Mark as complete"}
+                                style={{ display: "flex", alignItems: "center", gap: "5px", padding: "6px 10px", border: "1px solid #d9dce4", borderRadius: "6px", backgroundColor: "#fff", color: completedMaterialIds.has(Number(m.material_id)) ? "#27834a" : "#555", fontSize: "12px", fontWeight: "600", cursor: savingProgressId === Number(m.material_id) ? "wait" : "pointer", whiteSpace: "nowrap" }}
+                              >
+                                {completedMaterialIds.has(Number(m.material_id))
+                                  ? <CheckCircle2 size={15} />
+                                  : <Circle size={15} />}
+                                {savingProgressId === Number(m.material_id)
+                                  ? "Saving..."
+                                  : completedMaterialIds.has(Number(m.material_id))
+                                    ? "Completed"
+                                    : "Mark complete"}
+                              </button>
+                            )}
                             {activeTab === "handouts" && (
                               <>
                                 <a href={m.fileUrl} target="_blank" rel="noreferrer" style={{

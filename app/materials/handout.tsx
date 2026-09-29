@@ -16,6 +16,10 @@ import {
 import { WebView } from "react-native-webview";
 import { useAdmin } from "../../context/AdminContext";
 import {
+  getCompletedMaterialIds,
+  setMaterialCompleted,
+} from "../../services/materialProgressService";
+import {
   deleteMaterial,
   downloadMaterial,
   getMaterialsByModule,
@@ -105,13 +109,28 @@ export default function HandoutScreen() {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [viewingMaterial, setViewingMaterial] =
     useState<LearningMaterial | null>(null);
+  const [completedMaterialIds, setCompletedMaterialIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [savingProgressId, setSavingProgressId] = useState<number | null>(null);
 
   const fetchHandouts = useCallback(async () => {
     setLoading(true);
     const data = await getMaterialsByModule(moduleId, "handout");
     setHandouts(data);
+    if (!isAdmin && currentStudentId) {
+      try {
+        const completedIds = await getCompletedMaterialIds(
+          currentStudentId,
+          data.map((material) => material.material_id),
+        );
+        setCompletedMaterialIds(completedIds);
+      } catch (error: any) {
+        Alert.alert("Progress unavailable", error.message);
+      }
+    }
     setLoading(false);
-  }, [moduleId]);
+  }, [moduleId, currentStudentId, isAdmin]);
 
   useEffect(() => {
     if (moduleId) fetchHandouts();
@@ -143,6 +162,25 @@ export default function HandoutScreen() {
         },
       ],
     );
+  };
+
+  const handleToggleCompletion = async (item: LearningMaterial) => {
+    if (!currentStudentId) return;
+    const isCompleted = completedMaterialIds.has(item.material_id);
+    setSavingProgressId(item.material_id);
+    try {
+      await setMaterialCompleted(currentStudentId, item.material_id, !isCompleted);
+      setCompletedMaterialIds((current) => {
+        const next = new Set(current);
+        if (isCompleted) next.delete(item.material_id);
+        else next.add(item.material_id);
+        return next;
+      });
+    } catch (error: any) {
+      Alert.alert("Unable to update progress", error.message);
+    } finally {
+      setSavingProgressId(null);
+    }
   };
 
   const handleView = async (item: LearningMaterial) => {
@@ -216,6 +254,7 @@ export default function HandoutScreen() {
 
   const renderItem = ({ item }: { item: LearningMaterial }) => {
     const isDownloading = downloadingId === item.material_id;
+    const isCompleted = completedMaterialIds.has(item.material_id);
     return (
       <View style={styles.fileCard}>
         <View style={styles.fileIconWrap}>
@@ -257,6 +296,29 @@ export default function HandoutScreen() {
                       color="#2F459B"
                     />
                     <Text style={styles.actionBtnText}>Download</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {!isAdmin && currentStudentId && (
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => handleToggleCompletion(item)}
+                disabled={savingProgressId === item.material_id}
+              >
+                {savingProgressId === item.material_id ? (
+                  <ActivityIndicator size="small" color="#2F459B" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={isCompleted ? "checkmark-circle" : "ellipse-outline"}
+                      size={15}
+                      color={isCompleted ? "#27834a" : "#2F459B"}
+                    />
+                    <Text style={[styles.actionBtnText, isCompleted && { color: "#27834a" }]}>
+                      {isCompleted ? "Completed" : "Mark complete"}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
